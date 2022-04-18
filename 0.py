@@ -7,6 +7,8 @@ import json
 import pandas as pd
 from time import sleep
 from random import randint
+import os
+
 
 def fun(review_element,soup):
     ret = []
@@ -90,23 +92,32 @@ def fun(review_element,soup):
 
 def getlinks(driver,link,outp):
     a = json.load(open(outp,"r"))
-    soup = BeautifulSoup(driver.page_source, features="html.parser")
-    div=soup.find("div",{"class":"pagination__09f24__VRjN4 border-color--default__09f24__NPAKY"})
-    span=div.find("span",{"class":"css-chan6m"}).get_text()
-    print(span)
-    tot=int(span.split(' of ')[-1])
+    dmp=json.load(open('missing'+outp,'r'))
+    try:
+        soup = BeautifulSoup(driver.page_source, features="html.parser")
+        div=soup.find("div",{"class":"pagination__09f24__VRjN4 border-color--default__09f24__NPAKY"})
+        print(div)
+        span=div.find("span",{"class":"css-chan6m"}).get_text()
+        print(span)
+        tot=int(span.split(' of ')[-1])
+    
     # review_element = driver.find_elements_by_xpath(
     #     "/html/body/yelp-react-root/div[1]/div[4]/div/div/div[2]/div/div[1]/div[2]/section[2]/div[2]/div/div[4]/div[2]/span")
     # tot = int(str(review_element[0].text).split()[-1])
-    for i in range(tot):
-        a[link + "?start=" + str(10*i)] = "1"
-    print('done', link)
-    json.dump(a,open(outp,'w'),indent=6)
+        for i in range(tot):
+            a[link + "?start=" + str(10*i)] = "1"
+        print('done', link)
+        json.dump(a,open(outp,'w'),indent=6)
+    except:
+        print('No reviews')
+        dmp[link]='0'
+        json.dump(dmp,open('missing'+outp,'w'))
+        pass
 
 def dumpLinks(driver,name,outp):
     a = json.load(open(name,'r'))
     for link in a:
-        sleep(randint(2,4))
+        sleep(randint(2,10))
         driver.get(link)
         getlinks(driver,link,outp)
 
@@ -114,13 +125,15 @@ def dumpreviews(driver,inp,outp):
     a = json.load(open(inp,'r'))
     column = json.load(open(outp,'r'))
     for link in a:
-        sleep(randint(2,10))
+        os.system('cp reviews_left_2.json bkp/reviews_left_2.json')
         driver.get(link)
+        sleep(randint(1,2))
         soup = BeautifulSoup(driver.page_source, features="html.parser")
         review_element = driver.find_elements_by_xpath("/html/body/yelp-react-root/div[1]/div[4]/div/div/div[2]/div/div[1]/div[2]/section[2]/div[2]/div/ul/li")
         reviews = fun(review_element, soup)
         column[link] = reviews
         json.dump(column,open(outp,'w'), indent=6)
+        sleep(randint(1,2))
 
 chromeOptions = Options()
 chromeOptions.add_argument('--headless')
@@ -132,10 +145,10 @@ driver = webdriver.Chrome(ChromeDriverManager().install(),options=chromeOptions)
 # eviews-x.json
 
 # first run this
-# dumpLinks(driver,"la-1.json","links-0.json")
+#dumpLinks(driver,"la-3.json","links3_new.json")
 
 # then this
-dumpreviews(driver,"links-0.json","reviews-0.json")
+dumpreviews(driver,"left_2.json","reviews_left_2.json")
 
 
 driver.close()
